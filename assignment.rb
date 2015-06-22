@@ -1,12 +1,7 @@
 require 'csv'
-users = []
-#looping through CSV file to create a hash per row.
-CSV.foreach("users.csv", headers: true) do |row|
-  users.push(row)
-end
 
-class Bank
-  attr_reader :name, :balance, :accounts
+class User
+  attr_accessor :name, :balance, :accounts
 
   def initialize(name)
     @accounts = accounts
@@ -18,24 +13,30 @@ class Bank
     user = @accounts[name]
     return user[:account] if user[:user].verify_pin?(pin)
   end
-end
 
-class User 
-  attr_accessor :name, :pin
-
-  def initialize(name, pin)
-    @users = []
+  def self.authenticate
     CSV.foreach("users.csv", headers: true) do |row|
       @users.push(row)
     end
+  end
+end
+
+class Bank
+  attr_accessor :name, :pin, :balance
+
+  def initialize
+    # @users = User.new
     @name = name
     @pin = pin
+    @balance = 0.0
   end
 
-  def verify_pin?(pin)
-    if pin == @pin 
-      return true
-    end
+  def user=(new_user)
+    @new_user = Bank.new
+  end
+
+  def user
+    @new_user
   end
 
   def withdraw(amount)
@@ -53,9 +54,9 @@ class User
   end
 
   def prompt_user(text)
-  puts text
-  print ">> "
-  gets.chomp
+    puts text
+    print ">> "
+    gets.chomp
   end
 
   def prompt_and_chomp(text)
@@ -67,53 +68,64 @@ class User
   end
 
   def set_name_pin
-  current_user_name = prompt_and_chomp("To Make It Rain, Please Enter Your Name")  
-  current_user_pin = prompt_and_chomp("Now Gimme Dem Digits, Guh")  
-  puts "INPUT NAME: " + current_user_name
-  puts "INPUT PIN: " + current_user_pin
+    @current_user_name = self.prompt_and_chomp("To Make It Rain, Please Enter Your Name")  
+    @current_user_pin = self.prompt_and_chomp("Now Gimme Dem Digits, Guh")
+    self.verify  
   end
 
-current_user = nil
-@users.each do |user|
-  if user[:name] == current_user_name && user[:pin] == current_user_pin
-    current_user = user
+  def verify
+    current_user = nil
+    @new_user.each do |user|
+      if self.user[:name] == @current_user_name && user[:pin] == @current_user_pin.to_i
+        @current_user = user
+        self.menu
+      end
+    end  
   end
-end
 
-puts "CUR USER: " + current_user.inspect
+  # def menu
+  #   puts "Select an option from the menu."
+  #     puts %{
+  #     1: Check Balance
+  #     2: Withdraw Funds
+  #     3: Deposit Funds
+  #     4: Cancel
+  #   }
+  #   puts ">> "
+  #   @selected_option = gets.chomp
+  #   self.pre_opt
+  # end
 
-puts "Select an option from the menu."
-  puts %{
-    1: Check Balance
-    2: Withdraw Funds
-    3: Deposit Funds
-    4: Cancel
-  }
-  puts ">> "
-  cmd = gets.chomp
- 
- if current_user
-  options = ['1: Check Balance', '2: Withdraw funds', '3: Cancel']
-  selected_option = nil
-  until (1..options.length).include?(selected_option)
-    selected_option = prompt_user(options.join("\n")).to_i
- end
+  def menu
+      options = ['1: Check Balance', '2: Withdraw Funds', '3: Deposit Funds', '4: Cancel']
+      until (1..options.length).include?(@selected_option)
+        @selected_option = self.prompt_user(options.join("\n")).to_i
+     end
+     self.options
+  end
 
-  case selected_option
-  when 1
-      puts "Your existing balance is $%.2f\n" % account.balance
-  when 2
-      puts "What amount would you like to withdraw?"
-      amount = gets.chomp.to_i
-      account.withdraw(amount)
-  when 3
-      puts "What amount would you like to deposit?"
-      amount = gets.chomp.to_i
-      account.deposit(amount)
-  when 4
-      puts "Canceling transaction."
-  else
-      puts "Try again." unless cmd == 4
+  def options
+      case @selected_option
+      when 1
+          puts "Your existing balance is $%.2f\n" % account.balance
+      when 2
+          puts "What amount would you like to withdraw?"
+          amount = gets.chomp.to_i
+          account.withdraw(amount)
+      when 3
+          puts "What amount would you like to deposit?"
+          amount = gets.chomp.to_i
+          account.deposit(amount)
+      when 4
+          puts "Canceling transaction."
+      else
+          puts "Try again." unless cmd == 4
+        end
+      end
     end
-  end
-end 
+
+
+customer = Bank.new
+
+customer.set_name_pin
+
